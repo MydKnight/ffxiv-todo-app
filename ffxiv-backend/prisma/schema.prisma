@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Base models (no dependencies)
+model Job {
+  id          String @id @default(cuid())
+  name        String @unique
+  category    String
+  maxLevel    Int    @default(90)
+  icon        String?
+  
+  characters CharacterJob[]
+  
+  @@map("jobs")
+}
+
+model Achievement {
+  id          String @id @default(cuid())
+  gameId      Int    @unique
+  name        String
+  description String
+  category    String
+  points      Int    @default(0)
+  icon        String?
+  
+  characters CharacterAchievement[]
+  
+  @@map("achievements")
+}
+
+// 2. Junction/relationship models (define before Character uses them)
+model CharacterJob {
+  id           String @id @default(cuid())
+  characterId  String
+  jobId        String
+  level        Int    @default(1)
+  experience   Int    @default(0)
+  lastUpdated  DateTime @default(now())
+  
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  job       Job       @relation(fields: [jobId], references: [id])
+  
+  @@unique([characterId, jobId])
+  @@map("character_jobs")
+}
+
+model CharacterAchievement {
+  id            String @id @default(cuid())
+  characterId   String
+  achievementId String
+  earnedAt      DateTime @default(now())
+  
+  character   Character   @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id])
+  
+  @@unique([characterId, achievementId])
+  @@map("character_achievements")
+}
+
+model CharacterSnapshot {
+  id          String   @id @default(cuid())
+  characterId String
+  snapshotAt  DateTime @default(now())
+  dataJson    String
+  source      String   @default("lodestone")
+  
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  
+  @@map("character_snapshots")
+}
+
+// 3. Character model (now all referenced models are defined above)
+model Character {
+  id        String   @id @default(cuid())
+  name      String
+  server    String
+  lodestoneId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isActive  Boolean  @default(true)
+  
+  jobs         CharacterJob[]
+  achievements CharacterAchievement[]
+  snapshots    CharacterSnapshot[]
+  
+  @@unique([name, server])
+  @@map("characters")
+}
+
+// 4. Independent models (no relations to other models)
+model GameDataVersion {
+  id        String   @id @default(cuid())
+  version   String   @unique
+  createdAt DateTime @default(now())
+  isActive  Boolean  @default(false)
+  
+  @@map("game_data_versions")
+}
+
+model UserPreference {
+  id          String @id @default(cuid())
+  userId      String @unique
+  preferences String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("user_preferences")
+}
