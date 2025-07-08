@@ -16,6 +16,7 @@
     "test:setup": "jest tests/setup",
     "test:utils"  : "jest tests/utils",
     "test:clients": "jest tests/clients",
+    "test:config": "jest tests/config",
     "test:helpers": "jest tests/setup/test-helpers.test.ts",
     "test:single": "jest --testNamePattern",
     "test:file": "jest --testPathPattern",
