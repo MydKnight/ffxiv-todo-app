@@ -40,12 +40,57 @@ afterAll(async () => {
   try {
     await prisma.$disconnect();
     
-    // Clean up test database file
+    // Clean up test database file from the Prisma directory
     const fs = require('fs');
-    if (fs.existsSync(testDbName)) {
-      fs.unlinkSync(testDbName);
-      console.log(`Test database cleaned up: ${testDbName}`);
+    const path = require('path');
+    
+    // Define paths to check for the database files
+    const prismaDir = path.resolve(process.cwd(), 'prisma');
+    const possiblePaths = [
+      path.join(prismaDir, testDbName),
+      path.join(process.cwd(), testDbName),
+    ];
+    
+    console.log('Attempting to clean up database files...');
+    
+    // Try to delete files from all possible locations
+    possiblePaths.forEach(dbPath => {
+      // Try to delete the main DB file
+      if (fs.existsSync(dbPath)) {
+        fs.unlinkSync(dbPath);
+        console.log(`✓ Deleted database file: ${dbPath}`);
+      }
+      
+      // Also try to delete SQLite auxiliary files
+      const auxiliaryFiles = [
+        `${dbPath}-journal`,
+        `${dbPath}-wal`,
+        `${dbPath}-shm`
+      ];
+      
+      auxiliaryFiles.forEach(filePath => {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+          console.log(`✓ Deleted auxiliary file: ${filePath}`);
+        }
+      });
+    });
+    
+    // Additional check for any files matching the pattern in prisma dir
+    if (fs.existsSync(prismaDir)) {
+      const files = fs.readdirSync(prismaDir);
+      const testDbPrefix = testDbName.split('_')[0]; // Get the 'test' prefix
+      
+      files.forEach((file: string) => {
+        if (file.startsWith(testDbPrefix) && file.includes(testDbName.split('_')[1])) {
+          const filePath = path.join(prismaDir, file);
+          fs.unlinkSync(filePath);
+          console.log(`✓ Deleted matched database file: ${filePath}`);
+        }
+      });
     }
+    
+    console.log(`Test database cleanup complete.`);
   } catch (error) {
     console.error('Failed to cleanup test database:', error);
   }

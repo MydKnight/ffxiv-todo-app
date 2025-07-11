@@ -142,6 +142,7 @@ export interface QuestSearchParams {
   page?: number;
 }
 
+
 // Validation functions
 export function isValidJobCategory(category: string): category is JobCategory {
   const validCategories: JobCategory[] = [
